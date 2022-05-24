@@ -57,15 +57,15 @@ class InceptionBlock(nn.Module):
 class Network(nn.Module):
     def __init__(self):
         super(Network, self).__init__()
-        self.conv =  nn.Conv2d(1, 8, kernel_size=3, stride=1, padding=1) # first conv layer; 256x256x16
+        self.conv =  nn.Conv2d(1, 8, kernel_size=3, stride=1, padding=1) # first conv layer; 192x192x8
         self.bn = nn.BatchNorm2d(8)
         self.relu = nn.ReLU(inplace=True)
-        self.layer1 = self.make_layer(8, 16) # first layer; dimensions 128x128x16
-        self.layer2 = self.make_layer(16, 32) # second layer; dimensions 64x64x32
-        self.layer3 = self.make_layer(32, 64) # second layer; dimensions 32x32x64
-        self.layer4 = self.make_layer(64, 128) # second layer; dimensions 16x16x128
-        self.layer5 = self.make_layer(128, 256) # third layer; dimensions 8x8x256
-        self.avg_pool = nn.AvgPool2d(8) # flatten layer 8x8x256 into 1x1x256
+        self.layer1 = self.make_layer(8, 16) # second layer; dimensions 96x96x16
+        self.layer2 = self.make_layer(16, 32) # second layer; dimensions 48x48x32
+        self.layer3 = self.make_layer(32, 64) # second layer; dimensions 24x24x64
+        self.layer4 = self.make_layer(64, 128) # second layer; dimensions 12x12x128
+        self.layer5 = self.make_layer(128, 256) # third layer; dimensions 6x6x256
+        self.avg_pool = nn.AvgPool2d(6) # flatten layer 6x6x256 into 1x1x256
         self.fc = nn.Linear(256, 100) # final linear layer classifies the 100 authors
 
     # Make a layer
@@ -98,7 +98,7 @@ def BuildModel(images, labels, batch_size=64, learning_rate=0.001, epochs=100):
     print(device)
     model = Network().to(device)
 
-    X_train, X_test, Y_train, Y_test = train_test_split(images, labels, test_size=0.2, stratify=labels)
+    X_train, X_test, Y_train, Y_test = train_test_split(images, labels, test_size=(float(1/6)), stratify=labels)
 
     tensor_x = torch.Tensor(X_train) # transform to torch tensor
     tensor_y = torch.Tensor(Y_train)

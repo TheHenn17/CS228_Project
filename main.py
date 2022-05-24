@@ -12,8 +12,8 @@ def main():
         images = pickle.load(imagesf)
         labels = pickle.load(labelsf)
 
-    images = np.array(images, dtype=float) / 255
-    images = np.reshape(images, (21700, 1, 256, 256))
+    images = images.astype(float)
+    labels = labels.astype(float)
     print("Done.")
 
     print("Starting Training...")
