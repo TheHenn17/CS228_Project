@@ -1,36 +1,49 @@
-
-import xml.etree.ElementTree as ET
-import matplotlib.pyplot as plt
-import os
 import pickle
 import numpy as np
+import torch
+import matplotlib.pyplot as plt
 
-images = []
-labels = []
-for filename in os.listdir("xml"):
-    f = os.path.join("xml", filename)
+from network import BuildModel
 
-    tree = ET.parse(f)
-    root = tree.getroot()
-    writer = int(root.attrib['writer-id'])
+def main():
+    # load images and labels
+    print("Loading data...")
+    with open('images.data', 'rb') as imagesf, open('labels.data', 'rb') as labelsf:
+        images = pickle.load(imagesf)
+        labels = pickle.load(labelsf)
 
-    direct = os.path.join("words", filename[:3], filename[:-4])
-    for fname in os.listdir(direct):
-        f2 = os.path.join(direct, fname)
+    images = np.array(images, dtype=float) / 255
+    images = np.reshape(images, (21700, 1, 256, 256))
+    print("Done.")
 
-        print(f2)
-        try:
-            pic = plt.imread(f2)
-            images.append(pic)
-            labels.append(writer)
-        except:
-            continue
+    print("Starting Training...")
+    model, train_acc, test_acc, train_loss, e_itr, bestAccuracy = BuildModel(images, labels)
 
-with open('images.data', 'wb') as f:
-    pickle.dump(images, f)
+    torch.save(model.state_dict(), "model.pt")
+    
+    # print final test accuracy and best accuracy
+    print("Final Test Accuracy: %.2f%%"%(100*test_acc[-1]))
+    print("Best Test Accuracy: %.2f%% (Epoch %d)"%(100*bestAccuracy[0],bestAccuracy[1]))
 
-with open('labels.data', 'wb') as f:
-    pickle.dump(labels, f)
+    # plot the test accuracy
+    plt.plot(e_itr, test_acc)
+    plt.title('Test Accuracy vs Epochs')
+    plt.xlabel('Epochs')
+    plt.ylabel('Accuracy')
+    plt.show()
 
-# with open('images.data', 'rb') as f:
-#     data = pickle.load(f)
+    # plot the training accuracy
+    plt.plot(e_itr, train_acc)
+    plt.title('Training Accuracy vs Epochs')
+    plt.xlabel('Epochs')
+    plt.ylabel('Accuracy')
+    plt.show()
+
+    # plot the training loss
+    plt.plot(e_itr, train_loss)
+    plt.title('Training Loss vs Epochs')
+    plt.xlabel('Epochs')
+    plt.ylabel('Loss')
+    plt.show()
+
+main()

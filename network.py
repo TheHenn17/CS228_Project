@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 from torch.utils.data import TensorDataset, DataLoader
+from sklearn.model_selection import train_test_split
 
 # Inception block
 class InceptionBlock(nn.Module):
@@ -47,6 +48,7 @@ class InceptionBlock(nn.Module):
 
         # Calculate out
         out = [out1, out2, out3, out4]
+        out = torch.cat(out, 1)
         out += x
         out = self.relu(out)
         return out
@@ -55,7 +57,7 @@ class InceptionBlock(nn.Module):
 class Network(nn.Module):
     def __init__(self):
         super(Network, self).__init__()
-        self.conv =  nn.Conv2d(1, 16, kernel_size=3, stride=1, padding=1) # first conv layer; 256x256x8
+        self.conv =  nn.Conv2d(1, 8, kernel_size=3, stride=1, padding=1) # first conv layer; 256x256x16
         self.bn = nn.BatchNorm2d(8)
         self.relu = nn.ReLU(inplace=True)
         self.layer1 = self.make_layer(8, 16) # first layer; dimensions 128x128x16
@@ -71,7 +73,7 @@ class Network(nn.Module):
         layer = nn.Sequential(
             InceptionBlock(in_channels),
             InceptionBlock(in_channels),
-            nn.Conv2d(in_channels, out_channels, stride=2, padding=1),
+            nn.Conv2d(in_channels, out_channels, kernel_size=3, stride=2, padding=1),
             nn.BatchNorm2d(out_channels)
         )
         return layer
@@ -91,8 +93,12 @@ class Network(nn.Module):
         return out
 
 # builds model for a number of epochs, tests model every epoch
-def BuildModel(X_train, Y_train, X_test, Y_test, epochs=100, learning_rate=0.001, batch_size=64, doMixup=False, doCutout=False, doStandard=False):
-    model = Network().to("cpu")
+def BuildModel(images, labels, batch_size=64, learning_rate=0.001, epochs=100):
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    print(device)
+    model = Network().to(device)
+
+    X_train, X_test, Y_train, Y_test = train_test_split(images, labels, test_size=0.2, stratify=labels)
 
     tensor_x = torch.Tensor(X_train) # transform to torch tensor
     tensor_y = torch.Tensor(Y_train)
@@ -106,7 +112,7 @@ def BuildModel(X_train, Y_train, X_test, Y_test, epochs=100, learning_rate=0.001
     tensor_y = tensor_y.type(torch.LongTensor) # long tensor needed for targets, not float
 
     dataset = TensorDataset(tensor_x,tensor_y) # create test datset
-    test_loader = DataLoader(dataset=dataset, batch_size=batch_size, shuffle=False) # create test dataloader
+    test_loader = DataLoader(dataset=dataset, batch_size=batch_size, shuffle=True) # create test dataloader
 
     criterion = nn.CrossEntropyLoss() # set loss model
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate) # set optimizer
@@ -118,14 +124,15 @@ def BuildModel(X_train, Y_train, X_test, Y_test, epochs=100, learning_rate=0.001
     e_itr = []
     bestAccuracy = (0,-1)
 
+    print("Entering Training Loop.")
     for epoch in range(1, epochs+1):
         model.train() # set to train mode after testing at the end of last epoch
         epoch_loss = 0
         correct = 0
         total = 0
         for i, (inputs, targets) in enumerate(train_loader):
-            inputs = inputs.to("cpu")
-            targets = targets.to("cpu")
+            inputs = inputs.to(device)
+            targets = targets.to(device)
 
             optimizer.zero_grad() # gradient calculation
             outputs = model(inputs) # generate outputs
@@ -147,8 +154,9 @@ def BuildModel(X_train, Y_train, X_test, Y_test, epochs=100, learning_rate=0.001
         total = 0
         with torch.no_grad():
             for i, (inputs, targets) in enumerate(test_loader):
-                inputs = inputs.to("cpu")
-                targets = targets.to("cpu")
+                inputs = inputs.to(device)
+                targets = targets.to(device)
+
                 outputs = model(inputs) # generate outputs from model
 
                 _, predicted = outputs.max(1) # get class prediction
@@ -164,4 +172,4 @@ def BuildModel(X_train, Y_train, X_test, Y_test, epochs=100, learning_rate=0.001
         print("Epoch[%d/%d] | Training Loss: %.4f | Training Acc: %.2f%% | Test Acc: %.2f%%"
               %(epoch, epochs, epoch_loss, 100*train_acc[-1], 100*test_acc[-1]))
     
-    return train_acc, test_acc, train_loss, e_itr, bestAccuracy
+    return model, train_acc, test_acc, train_loss, e_itr, bestAccuracy
