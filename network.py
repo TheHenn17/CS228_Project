@@ -11,17 +11,21 @@ class InceptionBlock(nn.Module):
         super(InceptionBlock, self).__init__()
         self.dim = int(in_channels/4) # reduce the dimension by 4, so all branches add up to same dimension
         self.conv53 = nn.Sequential(
-            nn.Conv2d(in_channels, self.dim, kernel_size=1, stride=1, padding=0), # downsample, then convolve
-            nn.Conv2d(self.dim, self.dim, kernel_size=(5,3), stride=1, padding=(2,1)))
+            # nn.Conv2d(in_channels, self.dim, kernel_size=1, stride=1, padding=0), # downsample, then convolve
+            # nn.Conv2d(self.dim, self.dim, kernel_size=(5,3), stride=1, padding=(2,1)))
+            nn.Conv2d(in_channels, self.dim, kernel_size=(5,3), stride=1, padding=(2,1)))
         self.conv73 = nn.Sequential(
-            nn.Conv2d(in_channels, self.dim, kernel_size=1, stride=1, padding=0), # downsample, then convolve
-            nn.Conv2d(self.dim, self.dim, kernel_size=(7,3), stride=1, padding=(3,1)))
+            # nn.Conv2d(in_channels, self.dim, kernel_size=1, stride=1, padding=0), # downsample, then convolve
+            # nn.Conv2d(self.dim, self.dim, kernel_size=(7,3), stride=1, padding=(3,1)))
+            nn.Conv2d(in_channels, self.dim, kernel_size=(7,3), stride=1, padding=(3,1)))
         self.conv35 = nn.Sequential(
-            nn.Conv2d(in_channels, self.dim, kernel_size=1, stride=1, padding=0), # downsample, then convolve
-            nn.Conv2d(self.dim, self.dim, kernel_size=(3,5), stride=1, padding=(1,2)))
+            # nn.Conv2d(in_channels, self.dim, kernel_size=1, stride=1, padding=0), # downsample, then convolve
+            # nn.Conv2d(self.dim, self.dim, kernel_size=(3,5), stride=1, padding=(1,2)))
+            nn.Conv2d(in_channels, self.dim, kernel_size=(3,5), stride=1, padding=(1,2)))
         self.conv37 = nn.Sequential(
-            nn.Conv2d(in_channels, self.dim, kernel_size=1, stride=1, padding=0), # downsample, then convolve
-            nn.Conv2d(self.dim, self.dim, kernel_size=(3,7), stride=1, padding=(1,3)))
+            # nn.Conv2d(in_channels, self.dim, kernel_size=1, stride=1, padding=0), # downsample, then convolve
+            # nn.Conv2d(self.dim, self.dim, kernel_size=(3,7), stride=1, padding=(1,3)))
+            nn.Conv2d(in_channels, self.dim, kernel_size=(3,7), stride=1, padding=(1,3)))
         self.bn = nn.BatchNorm2d(self.dim)
         self.relu = nn.ReLU(inplace=True)
 
@@ -56,16 +60,18 @@ class InceptionBlock(nn.Module):
 class Network(nn.Module):
     def __init__(self):
         super(Network, self).__init__()
-        self.conv =  nn.Conv2d(1, 8, kernel_size=3, stride=1, padding=1) # first conv layer; 192x192x8
-        self.bn = nn.BatchNorm2d(8)
+        #self.conv = nn.Conv2d(1, 16, kernel_size=3, stride=1, padding=1) # first conv layer; 192x192x16
+        self.conv = nn.Conv2d(1, 16, kernel_size=1, stride=1, padding=0)
+        self.bn = nn.BatchNorm2d(16)
         self.relu = nn.ReLU(inplace=True)
-        self.layer1 = self.make_layer(8, 16) # second layer; dimensions 96x96x16
-        self.layer2 = self.make_layer(16, 32) # second layer; dimensions 48x48x32
-        self.layer3 = self.make_layer(32, 64) # second layer; dimensions 24x24x64
-        self.layer4 = self.make_layer(64, 128) # second layer; dimensions 12x12x128
-        self.layer5 = self.make_layer(128, 256) # third layer; dimensions 6x6x256
-        self.avg_pool = nn.AvgPool2d(6) # flatten layer 6x6x256 into 1x1x256
-        self.fc = nn.Linear(256, 100) # final linear layer classifies the 100 authors
+        self.layer1 = self.make_layer(16, 32) # first inception layer; dimensions 96x96x32
+        self.layer2 = self.make_layer(32, 64) # second inception layer; dimensions 48x48x64
+        self.layer3 = self.make_layer(64, 128) # third inception layer; dimensions 24x24x128
+        self.layer4 = self.make_layer(128, 256) # fourth inception layer; dimensions 12x12x256
+        self.layer5 = self.make_layer(256, 512) # fifth inception layer; dimensions 6x6x512
+        self.layer6 = self.make_layer(512, 1024) # sixth inception layer; dimensions 3x3x1024
+        self.avg_pool = nn.AvgPool2d(3) # flatten layer 6x6x256 into 1x1x1024
+        self.fc = nn.Linear(1024, 100) # final linear layer classifies the 100 authors
 
     # Make a layer
     def make_layer(self, in_channels, out_channels):
@@ -86,6 +92,7 @@ class Network(nn.Module):
         out = self.layer3(out)
         out = self.layer4(out)
         out = self.layer5(out)
+        out = self.layer6(out)
         out = self.avg_pool(out)
         out = out.view(out.size(0), -1)
         out = self.fc(out)
@@ -101,13 +108,14 @@ def BuildModel(images, labels, batch_size=64, learning_rate=0.001, epochs=100):
 
     transforms = torchvision.transforms.Compose([
         torchvision.transforms.RandomCrop(size=192, pad_if_needed=True),
-        torchvision.transforms.RandomAffine(degrees=45, translate=(0.33,0.33), scale=(0.5,2)),
+        torchvision.transforms.RandomAffine(degrees=45, translate=(0.5,0.5), scale=(0.5,2)),
         torchvision.transforms.RandomHorizontalFlip(p=0.5),
         torchvision.transforms.RandomVerticalFlip(p=0.5),
-        torchvision.transforms.RandomPerspective(distortion_scale=0.25, p=0.5)
+        torchvision.transforms.RandomPerspective(distortion_scale=0.1, p=0.5)
     ])
 
     tensor_x = torch.Tensor(X_train) # transform to torch tensor
+    tensor_x = torchvision.transforms.functional.invert(tensor_x)
     tensor_y = torch.Tensor(Y_train)
     tensor_y = tensor_y.type(torch.LongTensor) # long tensor needed for targets, not float
 
@@ -115,6 +123,7 @@ def BuildModel(images, labels, batch_size=64, learning_rate=0.001, epochs=100):
     train_loader = DataLoader(dataset=dataset, batch_size=batch_size, shuffle=True) # create train dataloader
 
     tensor_x = torch.Tensor(X_test) # transform to torch tensor
+    tensor_x = torchvision.transforms.functional.invert(tensor_x)
     tensor_y = torch.Tensor(Y_test)
     tensor_y = tensor_y.type(torch.LongTensor) # long tensor needed for targets, not float
 
@@ -138,9 +147,7 @@ def BuildModel(images, labels, batch_size=64, learning_rate=0.001, epochs=100):
         correct = 0
         total = 0
         for i, (inputs, targets) in enumerate(train_loader):
-            print(inputs.shape)
             inputs = transforms(inputs)
-            print(inputs.shape)
             inputs = inputs.to(device)
             targets = targets.to(device)
 
