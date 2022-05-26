@@ -50,8 +50,6 @@ class InceptionBlock(nn.Module):
         # Calculate out
         out = [out1, out2, out3, out4]
         out = torch.cat(out, 1)
-        out += x
-        out = self.relu(out)
         return out
 
 # ResNet
