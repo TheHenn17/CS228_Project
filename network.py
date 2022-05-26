@@ -107,7 +107,8 @@ def BuildModel(images, labels, batch_size=64, learning_rate=0.001, epochs=100):
     X_train, X_test, Y_train, Y_test = train_test_split(images, labels, test_size=(float(1/6)), stratify=labels)
 
     transforms = torchvision.transforms.Compose([
-        torchvision.transforms.RandomCrop(size=192, pad_if_needed=True),
+        torchvision.transforms.RandomCrop(size=128, pad_if_needed=True),
+        torchvision.transforms.Pad(32, fill=0, padding_mode='constant'),
         torchvision.transforms.RandomAffine(degrees=45, translate=(0.5,0.5), scale=(0.5,2)),
         torchvision.transforms.RandomHorizontalFlip(p=0.5),
         torchvision.transforms.RandomVerticalFlip(p=0.5),
