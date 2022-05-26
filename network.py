@@ -1,4 +1,5 @@
 import torch
+import torchvision
 import torch.nn as nn
 from torch.utils.data import TensorDataset, DataLoader
 from sklearn.model_selection import train_test_split
@@ -100,6 +101,14 @@ def BuildModel(images, labels, batch_size=64, learning_rate=0.001, epochs=100):
 
     X_train, X_test, Y_train, Y_test = train_test_split(images, labels, test_size=(float(1/6)), stratify=labels)
 
+    transforms = torchvision.transforms.Compose([
+        torchvision.transforms.RandomCrop(size=192, pad_if_needed=True),
+        torchvision.transforms.RandomAffine(degrees=45, translate=(0.33,0.33), scale=(0.5,2)),
+        torchvision.transforms.RandomHorizontalFlip(p=0.5),
+        torchvision.transforms.RandomVerticalFlip(p=0.5),
+        torchvision.transforms.RandomPerspective(distortion_scale=0.25, p=0.5)
+    ])
+
     tensor_x = torch.Tensor(X_train) # transform to torch tensor
     tensor_y = torch.Tensor(Y_train)
     tensor_y = tensor_y.type(torch.LongTensor) # long tensor needed for targets, not float
@@ -131,6 +140,9 @@ def BuildModel(images, labels, batch_size=64, learning_rate=0.001, epochs=100):
         correct = 0
         total = 0
         for i, (inputs, targets) in enumerate(train_loader):
+            print(inputs.shape)
+            inputs = transforms(inputs)
+            print(inputs.shape)
             inputs = inputs.to(device)
             targets = targets.to(device)
 
