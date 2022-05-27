@@ -10,7 +10,7 @@ from collections import Counter
 # and just contain the author of the image
 # at the corresponding index
 
-with open('images.data', 'rb') as imagesf, open('labels.data', 'rb') as labelsf:
+with open('old_files/images.data', 'rb') as imagesf, open('old_files/labels.data', 'rb') as labelsf:
     images = pickle.load(imagesf)
     labels = pickle.load(labelsf)
         
@@ -18,7 +18,7 @@ images = np.array(images, dtype=object)
 labels = np.array(labels, dtype=object)
 
 # topAuthors is a list of top 100 most common labels
-topAuthors = Counter(labels).most_common(100)
+topAuthors = Counter(labels).most_common(10)
 
 topAuthorIndicies = []
 
@@ -27,18 +27,18 @@ for author in topAuthors:
     count = 0
     for i, val in enumerate(labels):
         if author[0] == val:
-            if len(images[i]) <= 192 and len(images[i][0]) <= 192:
+            if len(images[i]) <= 128 and len(images[i][0]) <= 128:
                 count+=1
     if count < smallAut:
         smallAut = count
 print(smallAut)
-if smallAut >= 120:
-    smallAut = 120
+if smallAut >= 220:
+    smallAut = 220
 for author in topAuthors:
     candidates = []
     for i, val in enumerate(labels):
         if author[0] == val: # author found in labels
-            if len(images[i]) <= 192 and len(images[i][0]) <= 192: # check whether image at this location is under 256x256
+            if len(images[i]) <= 128 and len(images[i][0]) <= 128: # check whether image at this location is under 256x256
                 candidates.append((i, (len(images[i])*len(images[i][0])))) # save location and total pixels
     candidates.sort(key = lambda x: x[1], reverse=True) # sort candidates by largest sizes
     for i in range(smallAut): 
@@ -59,28 +59,30 @@ topImagesUnpadded = np.array(topImages, dtype=object)
 topLabels = np.array(topLabels, dtype=object)
 
 uniqueLab = np.unique(topLabels)
+print(uniqueLab)
 for i in range(topLabels.shape[0]):
     for j in range(uniqueLab.shape[0]):
         if topLabels[i] == uniqueLab[j]:
             topLabels[i] = j
+print(topLabels[-1])
 
-topImages = np.ones((topImagesUnpadded.shape[0],1,192,192))
+topImages = np.ones((topImagesUnpadded.shape[0],1,128,128))
 for i in range(topImagesUnpadded.shape[0]):
     height = topImagesUnpadded[i].shape[0]
     width = topImagesUnpadded[i].shape[1]
 
-    left = 96 - math.floor(width/2)
-    right = 96 - math.ceil(width/2)
-    top = 96 - math.floor(height/2)
-    bottom = 96 - math.ceil(height/2)
+    left = 64 - math.floor(width/2)
+    right = 64 - math.ceil(width/2)
+    top = 64 - math.floor(height/2)
+    bottom = 64 - math.ceil(height/2)
 
     paddedImage = np.pad(array=topImagesUnpadded[i], pad_width=[(top,bottom),(left,right)], mode='constant', constant_values=1)
     topImages[i][0] = paddedImage
 
-with open('images2.data', 'wb') as f:
+with open('images10.data', 'wb') as f:
     pickle.dump(topImages, f)
 
-with open('labels2.data', 'wb') as f:
+with open('labels10.data', 'wb') as f:
     pickle.dump(topLabels, f)
 exit(0)
 
