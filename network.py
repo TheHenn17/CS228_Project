@@ -10,22 +10,10 @@ class InceptionBlock(nn.Module):
     def __init__(self, in_channels):
         super(InceptionBlock, self).__init__()
         self.dim = int(in_channels/4) # reduce the dimension by 4, so all branches add up to same dimension
-        self.conv53 = nn.Sequential(
-            # nn.Conv2d(in_channels, self.dim, kernel_size=1, stride=1, padding=0), # downsample, then convolve
-            # nn.Conv2d(self.dim, self.dim, kernel_size=(5,3), stride=1, padding=(2,1)))
-            nn.Conv2d(in_channels, self.dim, kernel_size=(5,3), stride=1, padding=(2,1)))
-        self.conv73 = nn.Sequential(
-            # nn.Conv2d(in_channels, self.dim, kernel_size=1, stride=1, padding=0), # downsample, then convolve
-            # nn.Conv2d(self.dim, self.dim, kernel_size=(7,3), stride=1, padding=(3,1)))
-            nn.Conv2d(in_channels, self.dim, kernel_size=(7,3), stride=1, padding=(3,1)))
-        self.conv35 = nn.Sequential(
-            # nn.Conv2d(in_channels, self.dim, kernel_size=1, stride=1, padding=0), # downsample, then convolve
-            # nn.Conv2d(self.dim, self.dim, kernel_size=(3,5), stride=1, padding=(1,2)))
-            nn.Conv2d(in_channels, self.dim, kernel_size=(3,5), stride=1, padding=(1,2)))
-        self.conv37 = nn.Sequential(
-            # nn.Conv2d(in_channels, self.dim, kernel_size=1, stride=1, padding=0), # downsample, then convolve
-            # nn.Conv2d(self.dim, self.dim, kernel_size=(3,7), stride=1, padding=(1,3)))
-            nn.Conv2d(in_channels, self.dim, kernel_size=(3,7), stride=1, padding=(1,3)))
+        self.conv53 = nn.Conv2d(in_channels, self.dim, kernel_size=(5,3), stride=1, padding=(2,1))
+        self.conv73 = nn.Conv2d(in_channels, self.dim, kernel_size=(7,3), stride=1, padding=(3,1))
+        self.conv35 = nn.Conv2d(in_channels, self.dim, kernel_size=(3,5), stride=1, padding=(1,2))
+        self.conv37 = nn.Conv2d(in_channels, self.dim, kernel_size=(3,7), stride=1, padding=(1,3))
         self.bn = nn.BatchNorm2d(self.dim)
         self.relu = nn.ReLU(inplace=True)
 
@@ -62,8 +50,7 @@ class InceptionBlock(nn.Module):
 class Network(nn.Module):
     def __init__(self):
         super(Network, self).__init__()
-        #self.conv = nn.Conv2d(1, 16, kernel_size=3, stride=1, padding=1) # first conv layer; 192x192x16
-        self.conv = nn.Conv2d(1, 16, kernel_size=1, stride=1, padding=0)
+        self.conv = nn.Conv2d(1, 16, kernel_size=1, stride=1, padding=0) # 192x192x1 --> 192x192x16
         self.bn = nn.BatchNorm2d(16)
         self.relu = nn.ReLU(inplace=True)
         self.layer1 = self.make_layer(16, 32) # first inception layer; dimensions 96x96x32
@@ -71,7 +58,7 @@ class Network(nn.Module):
         self.layer3 = self.make_layer(64, 128) # third inception layer; dimensions 24x24x128
         self.layer4 = self.make_layer(128, 256) # fourth inception layer; dimensions 12x12x256
         self.layer5 = self.make_layer(256, 512) # fifth inception layer; dimensions 6x6x512
-        self.avg_pool = nn.AvgPool2d(6) # flatten layer 6x6x256 into 1x1x1024
+        self.avg_pool = nn.AvgPool2d(6) # flatten layer 6x6x256 into 1x1x512
         self.fc = nn.Linear(512, 100) # final linear layer classifies the 100 authors
 
     # Make a layer
