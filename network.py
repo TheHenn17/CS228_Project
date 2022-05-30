@@ -54,6 +54,8 @@ class InceptionBlock(nn.Module):
         # Calculate out
         out = [out1, out2, out3, out4]
         out = torch.cat(out, 1)
+        out = out + x
+        out = self.relu(out)
         return out
 
 # ResNet
@@ -69,9 +71,8 @@ class Network(nn.Module):
         self.layer3 = self.make_layer(64, 128) # third inception layer; dimensions 24x24x128
         self.layer4 = self.make_layer(128, 256) # fourth inception layer; dimensions 12x12x256
         self.layer5 = self.make_layer(256, 512) # fifth inception layer; dimensions 6x6x512
-        self.layer6 = self.make_layer(512, 1024) # sixth inception layer; dimensions 3x3x1024
-        self.avg_pool = nn.AvgPool2d(3) # flatten layer 6x6x256 into 1x1x1024
-        self.fc = nn.Linear(1024, 100) # final linear layer classifies the 100 authors
+        self.avg_pool = nn.AvgPool2d(6) # flatten layer 6x6x256 into 1x1x1024
+        self.fc = nn.Linear(512, 100) # final linear layer classifies the 100 authors
 
     # Make a layer
     def make_layer(self, in_channels, out_channels):
@@ -88,11 +89,15 @@ class Network(nn.Module):
         out = self.bn(out)
         out = self.relu(out)
         out = self.layer1(out)
+        out = self.relu(out)
         out = self.layer2(out)
+        out = self.relu(out)
         out = self.layer3(out)
+        out = self.relu(out)
         out = self.layer4(out)
+        out = self.relu(out)
         out = self.layer5(out)
-        out = self.layer6(out)
+        out = self.relu(out)
         out = self.avg_pool(out)
         out = out.view(out.size(0), -1)
         out = self.fc(out)
@@ -101,14 +106,13 @@ class Network(nn.Module):
 # builds model for a number of epochs, tests model every epoch
 def BuildModel(images, labels, batch_size=64, learning_rate=0.001, epochs=100):
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    print(device)
+    print("Selected Device:",device)
     model = Network().to(device)
 
     X_train, X_test, Y_train, Y_test = train_test_split(images, labels, test_size=(float(1/6)), stratify=labels)
 
     transforms = torchvision.transforms.Compose([
-        torchvision.transforms.RandomCrop(size=128, pad_if_needed=True),
-        torchvision.transforms.Pad(32, fill=0, padding_mode='constant'),
+        torchvision.transforms.RandomCrop(size=192, pad_if_needed=True),
         torchvision.transforms.RandomAffine(degrees=45, translate=(0.5,0.5), scale=(0.5,2)),
         torchvision.transforms.RandomHorizontalFlip(p=0.5),
         torchvision.transforms.RandomVerticalFlip(p=0.5),

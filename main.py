@@ -8,7 +8,7 @@ from network import BuildModel
 def main():
     # load images and labels
     print("Loading data...")
-    with open('images.data', 'rb') as imagesf, open('labels.data', 'rb') as labelsf:
+    with open('images100.data', 'rb') as imagesf, open('labels100.data', 'rb') as labelsf:
         images = pickle.load(imagesf)
         labels = pickle.load(labelsf)
 
