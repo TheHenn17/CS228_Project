@@ -42,8 +42,8 @@ class InceptionBlock(nn.Module):
         # Calculate out
         out = [out1, out2, out3, out4]
         out = torch.cat(out, 1)
-        out = out + x
-        out = self.relu(out)
+        # out = out + x
+        # out = self.relu(out)
         return out
 
 # ResNet
@@ -100,7 +100,7 @@ def BuildModel(images, labels, batch_size=64, learning_rate=0.001, epochs=100):
 
     transforms = torchvision.transforms.Compose([
         torchvision.transforms.RandomCrop(size=192, pad_if_needed=True),
-        torchvision.transforms.RandomAffine(degrees=45, translate=(0.5,0.5), scale=(0.5,2)),
+        torchvision.transforms.RandomAffine(degrees=45, translate=(0.25,0.25), scale=(0.5,2)),
         torchvision.transforms.RandomHorizontalFlip(p=0.5),
         torchvision.transforms.RandomVerticalFlip(p=0.5),
         torchvision.transforms.RandomPerspective(distortion_scale=0.1, p=0.5)
@@ -139,7 +139,7 @@ def BuildModel(images, labels, batch_size=64, learning_rate=0.001, epochs=100):
         correct = 0
         total = 0
         for i, (inputs, targets) in enumerate(train_loader):
-            inputs = transforms(inputs)
+            #inputs = transforms(inputs)
             inputs = inputs.to(device)
             targets = targets.to(device)
 
@@ -168,9 +168,10 @@ def BuildModel(images, labels, batch_size=64, learning_rate=0.001, epochs=100):
 
                 outputs = model(inputs) # generate outputs from model
 
-                _, predicted = outputs.max(1) # get class prediction
-                total += targets.size(0) # update total
-                correct += predicted.eq(targets).sum().item() # get number of correct predicted labels
+                _, top_class = outputs.topk(1, dim=1)
+                eq = (top_class == targets.view(-1, 1))
+                correct += eq.sum().item()
+                total += targets.size(0) # update total     
         
         # Calculate and store test accuracy, update best accuracy
         test_acc.append(correct/total)
