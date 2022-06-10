@@ -1,9 +1,10 @@
+# This script parses the original word files when downloading the IAM database,
+# retrieves the corresponding author, and pickles the data
 
 import xml.etree.ElementTree as ET
 import matplotlib.pyplot as plt
 import os
 import pickle
-import numpy as np
 
 images = []
 labels = []
@@ -26,11 +27,9 @@ for filename in os.listdir("xml"):
         except:
             continue
 
+# save the data
 with open('images.data', 'wb') as f:
     pickle.dump(images, f)
 
 with open('labels.data', 'wb') as f:
     pickle.dump(labels, f)
-
-# with open('images.data', 'rb') as f:
-#     data = pickle.load(f)

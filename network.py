@@ -41,9 +41,9 @@ class InceptionBlock(nn.Module):
 
         # Calculate out
         out = [out1, out2, out3, out4]
-        out = torch.cat(out, 1)
-        # out = out + x
-        # out = self.relu(out)
+        out = torch.cat(out, 1) 
+        out = out + x # residual connection
+        out = self.relu(out)
         return out
 
 # ResNet
@@ -93,7 +93,7 @@ class Network(nn.Module):
 # builds model for a number of epochs, tests model every epoch
 def BuildModel(images, labels, batch_size=64, learning_rate=0.001, epochs=100):
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    print("Selected Device:",device)
+    print("Selected Training Device:",device)
     model = Network().to(device)
 
     X_train, X_test, Y_train, Y_test = train_test_split(images, labels, test_size=(float(1/6)), stratify=labels)
@@ -132,7 +132,6 @@ def BuildModel(images, labels, batch_size=64, learning_rate=0.001, epochs=100):
     e_itr = []
     bestAccuracy = (0,-1)
 
-    print("Entering Training Loop.")
     for epoch in range(1, epochs+1):
         model.train() # set to train mode after testing at the end of last epoch
         epoch_loss = 0
@@ -168,7 +167,7 @@ def BuildModel(images, labels, batch_size=64, learning_rate=0.001, epochs=100):
 
                 outputs = model(inputs) # generate outputs from model
 
-                _, top_class = outputs.topk(1, dim=1)
+                _, top_class = outputs.topk(1, dim=1) # top k outputs
                 eq = (top_class == targets.view(-1, 1))
                 correct += eq.sum().item()
                 total += targets.size(0) # update total     

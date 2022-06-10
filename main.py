@@ -16,7 +16,6 @@ def main():
     labels = labels.astype(float)
     print("Done.")
 
-    print("Starting Training...")
     model, train_acc, test_acc, train_loss, e_itr, bestAccuracy = BuildModel(images, labels)
 
     torch.save(model.state_dict(), "model.pt")
